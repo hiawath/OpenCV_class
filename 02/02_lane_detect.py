@@ -16,6 +16,7 @@ import sys
 # ────────────────────────────────────────────────
 # 설정값
 # ────────────────────────────────────────────────
+TARGET_FPS      = 30     # 목표 재생 FPS
 SMOOTH_ALPHA    = 0.15   # EMA 계수 (작을수록 부드럽고 반응 느림)
 MAX_MISS_FRAMES = 15     # 미감지 허용 프레임 수 (이후엔 선 숨김)
 
@@ -313,36 +314,52 @@ def main():
     frame_count = 0
     paused      = False
 
+    tick_freq       = cv2.getTickFrequency()
+    frame_interval  = tick_freq / TARGET_FPS   # 목표 프레임 간격 (ticks)
+    fps_timer       = cv2.getTickCount()
+ 
+    print(f"[정보] 목표 FPS: {TARGET_FPS}")
     print("[Q / ESC] 종료    [Space] 일시정지 / 재개")
 
+    # 누적 오차 보정용: 다음 프레임이 표시되어야 할 이상적 시각(ticks)
+    next_frame_time = cv2.getTickCount()
+ 
     while True:
-        key = cv2.waitKey(1) & 0xFF
+        ret, frame = cap.read()
+        if not ret:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            smoother = LaneSmoother()
+            next_frame_time = cv2.getTickCount()
+            continue
+ 
+        if not paused:
+            frame_count += 1
+            if frame_count % TARGET_FPS == 0:
+                elapsed   = (cv2.getTickCount() - fps_timer) / tick_freq
+                fps       = TARGET_FPS / max(elapsed, 1e-6)
+                fps_timer = cv2.getTickCount()
+ 
+            result, lm, rm = process_frame(frame, smoother)
+            result         = draw_info(result, fps, lm, rm)
+            cv2.imshow("Lane Detection v2", result)
+ 
+        # ── 누적 오차 보정 FPS 제한 ──────────────────────────
+        # 매 루프마다 목표 시각을 frame_interval씩 전진
+        # → 매번 "현재+interval"로 계산하는 방식보다 드리프트가 누적되지 않음
+        next_frame_time += frame_interval
+        remaining_ticks  = next_frame_time - cv2.getTickCount()
+        wait_ms          = max(1, int(remaining_ticks / tick_freq * 1000))
+ 
+        key = cv2.waitKey(wait_ms) & 0xFF
         if key in (ord('q'), 27):
             break
         if key == ord(' '):
             paused = not paused
-
-        if paused:
-            continue
-
-        ret, frame = cap.read()
-        if not ret:
-            # 동영상 끝 → 처음부터 반복
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            smoother = LaneSmoother()
-            continue
-
-        frame_count += 1
-        if frame_count % 30 == 0:
-            elapsed   = (cv2.getTickCount() - fps_timer) / cv2.getTickFrequency()
-            fps       = 30 / max(elapsed, 1e-6)
-            fps_timer = cv2.getTickCount()
-
-        result, lm, rm = process_frame(frame, smoother)
-        result         = draw_info(result, fps, lm, rm)
-
-        cv2.imshow("Lane Detection v2", result)
-
+ 
+        # 처리가 목표 시각을 크게 초과하면 next_frame_time 리셋 (음수 누적 방지)
+        if cv2.getTickCount() > next_frame_time + frame_interval:
+            next_frame_time = cv2.getTickCount()
+ 
     cap.release()
     cv2.destroyAllWindows()
     print("[완료]")
