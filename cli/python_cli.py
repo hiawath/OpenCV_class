@@ -56,6 +56,17 @@ def list_directory():
     except Exception as e:
         print(f"목록을 불러오는 중 오류가 발생했습니다: {e}")
 
+@register_command("calc", "사용자가 입력한 수식(예: 10 * 5 / 2)을 즉석에서 계산해 결과를 보여줍니다.")
+def calculate_expression():
+    expr = input("계산할 수식을 입력하세요 (예: 10 * 5 / 2) >> ").strip()
+    try:
+        result = eval(expr)
+        print(f"결과: {result}")
+    except ZeroDivisionError:
+        print("오류: 0으로 나눌 수 없습니다.")
+    except Exception as e:
+        print(f"수식 오류: 유효한 수식이 아닙니다. ({e})")
+
 def main_cli():
     username = getpass.getuser()
     hostname = platform.node()
