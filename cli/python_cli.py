@@ -5,6 +5,8 @@ import getpass
 import shutil
 from datetime import datetime
 import fnmatch
+import time
+import random
 
 
 # 기능 정의 예시
@@ -138,6 +140,38 @@ def find_files():
             print(f"\n  총 {found_count}개의 파일을 찾았습니다.")
     except Exception as e:
         print(f"검색 중 오류가 발생했습니다: {e}")
+
+@register_command("ping", "가상의 IP 주소나 장비 포트에 신호를 보내 응답 시간을 측정하는 시뮬레이션을 합니다.")
+def simulate_ping():
+    target = input("ping 테스트를 수행할 가상의 IP 또는 장비 이름을 입력하세요 >> ").strip()
+    if not target:
+        print("대상을 입력해주세요.")
+        return
+        
+    print(f"\n[{target}]에 대한 ping 테스트 시뮬레이션 시작...")
+    
+    success_count = 0
+    total_time = 0
+    
+    for _ in range(4):
+        # 시뮬레이션 네트워크 지연 (0.01초 ~ 0.5초)
+        delay = random.uniform(0.01, 0.5)
+        time.sleep(delay)
+        
+        # 85% 확률로 응답 성공
+        if random.random() < 0.85:
+            ms = int(delay * 1000)
+            print(f"{target}의 응답: 바이트=32 시간={ms}ms TTL=64")
+            success_count += 1
+            total_time += ms
+        else:
+            print("요청 시간이 만료되었습니다.")
+            
+    print(f"\n--- {target} ping 통계 ---")
+    loss_count = 4 - success_count
+    print(f"패킷: 보냄 = 4, 받음 = {success_count}, 손실 = {loss_count} ({int(loss_count/4*100)}% 손실)")
+    if success_count > 0:
+        print(f"대략적인 왕복 시간: 평균 = {total_time // success_count}ms")
 
 def main_cli():
     username = getpass.getuser()
