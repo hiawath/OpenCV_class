@@ -7,6 +7,7 @@ from datetime import datetime
 import fnmatch
 import time
 import random
+import subprocess
 
 
 # 기능 정의 예시
@@ -141,37 +142,22 @@ def find_files():
     except Exception as e:
         print(f"검색 중 오류가 발생했습니다: {e}")
 
-@register_command("ping", "가상의 IP 주소나 장비 포트에 신호를 보내 응답 시간을 측정하는 시뮬레이션을 합니다.")
-def simulate_ping():
-    target = input("ping 테스트를 수행할 가상의 IP 또는 장비 이름을 입력하세요 >> ").strip()
+@register_command("ping", "실제 IP 주소나 도메인에 네트워크 ping 테스트를 수행합니다.")
+def execute_ping():
+    target = input("ping 테스트를 수행할 IP 또는 도메인을 입력하세요 >> ").strip()
     if not target:
         print("대상을 입력해주세요.")
         return
         
-    print(f"\n[{target}]에 대한 ping 테스트 시뮬레이션 시작...")
+    print(f"\n[{target}]에 대한 실제 ping 테스트 시작...\n")
     
-    success_count = 0
-    total_time = 0
+    # 운영체제에 따라 ping 명령어 옵션 설정 (윈도우: -n, 맥/리눅스: -c)
+    param = '-n' if platform.system().lower() == 'windows' else '-c'
     
-    for _ in range(4):
-        # 시뮬레이션 네트워크 지연 (0.01초 ~ 0.5초)
-        delay = random.uniform(0.01, 0.5)
-        time.sleep(delay)
-        
-        # 85% 확률로 응답 성공
-        if random.random() < 0.85:
-            ms = int(delay * 1000)
-            print(f"{target}의 응답: 바이트=32 시간={ms}ms TTL=64")
-            success_count += 1
-            total_time += ms
-        else:
-            print("요청 시간이 만료되었습니다.")
-            
-    print(f"\n--- {target} ping 통계 ---")
-    loss_count = 4 - success_count
-    print(f"패킷: 보냄 = 4, 받음 = {success_count}, 손실 = {loss_count} ({int(loss_count/4*100)}% 손실)")
-    if success_count > 0:
-        print(f"대략적인 왕복 시간: 평균 = {total_time // success_count}ms")
+    try:
+        subprocess.run(['ping', param, '4', target])
+    except Exception as e:
+        print(f"ping 테스트 중 오류가 발생했습니다: {e}")
 
 def main_cli():
     username = getpass.getuser()
