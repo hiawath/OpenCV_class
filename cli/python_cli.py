@@ -42,6 +42,20 @@ def clear_screen():
     # 윈도우는 'cls', 맥/리눅스는 'clear'
     os.system('cls' if os.name == 'nt' else 'clear')
 
+@register_command("ls", "현재 폴더에 있는 파일과 디렉토리 목록을 보기 좋게 출력합니다.")
+def list_directory():
+    current_path = os.getcwd()
+    print(f"\n[{current_path}] 디렉토리 내용:")
+    try:
+        for item in sorted(os.listdir(current_path)):
+            full_path = os.path.join(current_path, item)
+            if os.path.isdir(full_path):
+                print(f"  [DIR]  {item}")
+            else:
+                print(f"  [FILE] {item}")
+    except Exception as e:
+        print(f"목록을 불러오는 중 오류가 발생했습니다: {e}")
+
 def main_cli():
     username = getpass.getuser()
     hostname = platform.node()
