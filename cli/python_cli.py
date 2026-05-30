@@ -67,6 +67,23 @@ def calculate_expression():
     except Exception as e:
         print(f"수식 오류: 유효한 수식이 아닙니다. ({e})")
 
+@register_command("logview", "log.txt 파일의 마지막 10줄을 읽어서 실시간 공정 상태를 모니터링합니다.")
+def view_logs():
+    log_file = "./cli/log.txt"
+    if not os.path.exists(log_file):
+        print(f"[{log_file}] 파일이 존재하지 않습니다.")
+        return
+        
+    try:
+        with open(log_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            last_lines = lines[-10:] # 리스트 슬라이싱으로 마지막 10줄 가져오기
+            print(f"\n--- [최근 로그 {len(last_lines)}줄] ---")
+            for line in last_lines:
+                print(line.strip())
+    except Exception as e:
+        print(f"로그 파일을 읽는 중 오류가 발생했습니다: {e}")
+
 def main_cli():
     username = getpass.getuser()
     hostname = platform.node()
