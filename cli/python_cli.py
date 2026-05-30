@@ -4,6 +4,7 @@ import platform
 import getpass
 import shutil
 from datetime import datetime
+import fnmatch
 
 
 # 기능 정의 예시
@@ -103,6 +104,40 @@ def backup_data():
         print(f"백업 성공: '{target_dir}' 폴더가 '{backup_dir}'(으)로 복사되었습니다.")
     except Exception as e:
         print(f"백업 중 오류가 발생했습니다: {e}")
+
+@register_command("find", "지정된 디렉토리(하위 포함)에서 패턴(예: *.py)에 맞는 파일을 검색합니다.")
+def find_files():
+    target_dir = input("검색할 디렉토리 경로를 입력하세요 (엔터 입력 시 현재 폴더) >> ").strip()
+    if not target_dir:
+        target_dir = os.getcwd()
+        
+    if not os.path.isdir(target_dir):
+        print(f"오류: '{target_dir}'은(는) 유효한 디렉토리가 아닙니다.")
+        return
+        
+    pattern = input("검색할 파일명 패턴을 입력하세요 (예: *.py, *test*) >> ").strip()
+    if not pattern:
+        print("패턴을 입력해주세요.")
+        return
+        
+    # 사용자가 와일드카드를 쓰지 않은 경우 키워드 포함 검색(*키워드*)으로 자동 전환
+    if '*' not in pattern and '?' not in pattern:
+        pattern = f"*{pattern}*"
+        
+    print(f"\n[{target_dir}] 및 하위 폴더에서 '{pattern}' 검색 결과:")
+    try:
+        found_count = 0
+        for root, dirs, files in os.walk(target_dir):
+            for file in files:
+                if fnmatch.fnmatch(file, pattern):
+                    print(f"  - {os.path.join(root, file)}")
+                    found_count += 1
+        if found_count == 0:
+            print("  일치하는 파일이 없습니다.")
+        else:
+            print(f"\n  총 {found_count}개의 파일을 찾았습니다.")
+    except Exception as e:
+        print(f"검색 중 오류가 발생했습니다: {e}")
 
 def main_cli():
     username = getpass.getuser()
