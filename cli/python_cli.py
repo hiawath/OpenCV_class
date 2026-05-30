@@ -2,6 +2,8 @@ import sys
 import os
 import platform
 import getpass
+import shutil
+from datetime import datetime
 
 
 # 기능 정의 예시
@@ -83,6 +85,24 @@ def view_logs():
                 print(line.strip())
     except Exception as e:
         print(f"로그 파일을 읽는 중 오류가 발생했습니다: {e}")
+
+@register_command("backup", "지정된 데이터 폴더를 backup_날짜 형태의 폴더로 복사합니다.")
+def backup_data():
+    target_dir = input("백업할 원본 폴더 경로를 입력하세요 (예: ./temp) >> ").strip()
+    if not os.path.exists(target_dir):
+        print(f"오류: '{target_dir}' 경로가 존재하지 않습니다.")
+        return
+    if not os.path.isdir(target_dir):
+        print(f"오류: '{target_dir}'은(는) 폴더가 아닙니다.")
+        return
+        
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_dir = f"backup_{timestamp}"
+    try:
+        shutil.copytree(target_dir, backup_dir)
+        print(f"백업 성공: '{target_dir}' 폴더가 '{backup_dir}'(으)로 복사되었습니다.")
+    except Exception as e:
+        print(f"백업 중 오류가 발생했습니다: {e}")
 
 def main_cli():
     username = getpass.getuser()
