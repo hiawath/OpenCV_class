@@ -9,6 +9,7 @@ import time
 import random
 import subprocess
 import atexit
+import csv
 
 # -------------------------------------------------------------------
 # 히스토리 기능 설정 (위/아래 방향키 및 파일 저장)
@@ -297,6 +298,37 @@ def show_history(arg=""):
                 print(f"{i:>3}: {line.strip()}")
     except Exception as e:
         print(f"히스토리 파일을 읽는 중 오류가 발생했습니다: {e}")
+
+@register_command("report", "현재 메모리에 저장된 모든 수치 데이터를 요약하여 report.csv 파일로 저장합니다.")
+def generate_report(arg=""):
+    filename = arg if arg else "./temp/report.csv"
+    
+    if not plc_registers:
+        print("레지스터 메모리가 비어 있어 보고서를 생성할 수 없습니다.")
+        return
+        
+    try:
+        with open(filename, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            # CSV 헤더 작성
+            writer.writerow(["Register Name", "Value", "Data Type"])
+            
+            count = 0
+            for reg, val in plc_registers.items():
+                data_type = "String"
+                try:
+                    # 수치 데이터 판별
+                    float_val = float(val)
+                    data_type = "Numeric"
+                    count += 1
+                except ValueError:
+                    pass
+                    
+                writer.writerow([reg, val, data_type])
+                
+        print(f"✅ 보고서 저장 완료: '{filename}' (총 {len(plc_registers)}개 항목 중 수치 데이터 {count}개 저장)")
+    except Exception as e:
+        print(f"보고서 저장 중 오류가 발생했습니다: {e}")
 
 def main_cli():
     setup_history()
