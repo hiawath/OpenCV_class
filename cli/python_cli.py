@@ -8,6 +8,40 @@ import fnmatch
 import time
 import random
 import subprocess
+import atexit
+
+# -------------------------------------------------------------------
+# 히스토리 기능 설정 (위/아래 방향키 및 파일 저장)
+# -------------------------------------------------------------------
+try:
+    import readline
+    READLINE_AVAILABLE = True
+except ImportError:
+    # 윈도우 환경에서는 pyreadline3 패키지가 없으면 readline을 사용할 수 없습니다.
+    # 방향키 파일 연동을 원하시면 터미널에서 'pip install pyreadline3'를 설치하세요.
+    READLINE_AVAILABLE = False
+
+HISTORY_FILE = "./cli/.cli_history"
+HISTORY_MAX = 100
+
+def setup_history():
+    if READLINE_AVAILABLE:
+        try:
+            if os.path.exists(HISTORY_FILE):
+                readline.read_history_file(HISTORY_FILE)
+            readline.set_history_length(HISTORY_MAX)
+        except Exception:
+            pass
+
+def save_history():
+    if READLINE_AVAILABLE:
+        try:
+            readline.write_history_file(HISTORY_FILE)
+        except Exception:
+            pass
+
+if READLINE_AVAILABLE:
+    atexit.register(save_history)
 
 
 # 기능 정의 예시
@@ -171,7 +205,23 @@ def execute_ping(arg=""):
     except Exception as e:
         print(f"ping 테스트 중 오류가 발생했습니다: {e}")
 
+@register_command("history", "그동안 실행했던 명령어 기록을 최대 100개까지 보여줍니다.")
+def show_history(arg=""):
+    if not os.path.exists(HISTORY_FILE):
+        print("기록된 히스토리가 없습니다.")
+        return
+        
+    try:
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            print(f"\n--- [명령어 히스토리] ---")
+            for i, line in enumerate(lines, 1):
+                print(f"{i:>3}: {line.strip()}")
+    except Exception as e:
+        print(f"히스토리 파일을 읽는 중 오류가 발생했습니다: {e}")
+
 def main_cli():
+    setup_history()
     username = getpass.getuser()
     hostname = platform.node()
     while True:
@@ -180,6 +230,23 @@ def main_cli():
             if not raw_input:
                 continue
                 
+            # 명령어 기록 유지 (최대 100개 파일 저장)
+            if not READLINE_AVAILABLE:
+                try:
+                    lines = []
+                    if os.path.exists(HISTORY_FILE):
+                        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                            lines = f.readlines()
+                    lines.append(raw_input + "\n")
+                    if len(lines) > HISTORY_MAX:
+                        lines = lines[-HISTORY_MAX:]
+                    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+                        f.writelines(lines)
+                except Exception:
+                    pass
+            else:
+                save_history()
+
             parts = raw_input.split(maxsplit=1)
             cmd = parts[0].lower()
             arg = parts[1] if len(parts) > 1 else ""
