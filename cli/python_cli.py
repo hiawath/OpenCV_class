@@ -226,7 +226,8 @@ def main_cli():
     hostname = platform.node()
     while True:
         try:
-            raw_input = input(f"\n[{username}@{hostname}] >> ").strip()
+            print() # readline 버퍼링 렌더링 버그 방지를 위해 개행을 별도 분리
+            raw_input = input(f"[{username}@{hostname}] >> ").strip()
             if not raw_input:
                 continue
                 
