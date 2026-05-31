@@ -205,6 +205,39 @@ def execute_ping(arg=""):
     except Exception as e:
         print(f"ping 테스트 중 오류가 발생했습니다: {e}")
 
+# 가상의 PLC 레지스터 메모리 공간
+plc_registers = {}
+
+@register_command("reg", "가상의 PLC 레지스터 메모리(딕셔너리)에 값을 쓰고 읽습니다. (예: reg D001 100)")
+def manage_register(arg=""):
+    if not arg:
+        print("사용법:")
+        print("  - 값 쓰기: reg [레지스터명] [값] (예: reg D001 100)")
+        print("  - 값 읽기: reg [레지스터명] (예: reg D001)")
+        print("  - 전체 보기: reg all")
+        return
+        
+    parts = arg.split()
+    if len(parts) == 1:
+        reg_name = parts[0].upper()
+        if reg_name == "ALL":
+            if not plc_registers:
+                print("레지스터가 비어있습니다.")
+            else:
+                print("\n--- [PLC 레지스터 상태] ---")
+                for k, v in plc_registers.items():
+                    print(f"  {k} : {v}")
+        else:
+            if reg_name in plc_registers:
+                print(f"[{reg_name}] 레지스터 값: {plc_registers[reg_name]}")
+            else:
+                print(f"[{reg_name}] 레지스터에 저장된 값이 없습니다.")
+    elif len(parts) >= 2:
+        reg_name = parts[0].upper()
+        reg_value = parts[1]
+        plc_registers[reg_name] = reg_value
+        print(f"[{reg_name}] 레지스터에 값 '{reg_value}'을(를) 저장했습니다.")
+
 @register_command("history", "그동안 실행했던 명령어 기록을 최대 100개까지 보여줍니다.")
 def show_history(arg=""):
     if not os.path.exists(HISTORY_FILE):
