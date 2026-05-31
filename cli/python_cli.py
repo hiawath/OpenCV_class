@@ -21,7 +21,7 @@ except ImportError:
     # 방향키 파일 연동을 원하시면 터미널에서 'pip install pyreadline3'를 설치하세요.
     READLINE_AVAILABLE = False
 
-HISTORY_FILE = "./cli/.cli_history"
+HISTORY_FILE = "./cli/cli_history.txt"
 HISTORY_MAX = 100
 
 def setup_history():

@@ -1,3 +1,4 @@
 .venv
 temp/
-./cli/.cli_history
+cli/cli_history.txt
+
