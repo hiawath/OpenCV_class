@@ -238,6 +238,51 @@ def manage_register(arg=""):
         plc_registers[reg_name] = reg_value
         print(f"[{reg_name}] 레지스터에 값 '{reg_value}'을(를) 저장했습니다.")
 
+# 전역 변수로 임계값 관리
+sensor_threshold = None
+
+@register_command("alert", "센서 데이터의 경고 임계값을 설정하고 현재 값과 비교합니다.")
+def manage_alert(arg=""):
+    global sensor_threshold
+    
+    if not arg:
+        print("사용법:")
+        print("  - 임계값 설정: alert set [값] (예: alert set 80)")
+        print("  - 레지스터 확인: alert check [레지스터명] (예: alert check D001)")
+        current = sensor_threshold if sensor_threshold is not None else "설정되지 않음"
+        print(f"현재 설정된 임계값: {current}")
+        return
+        
+    parts = arg.split()
+    cmd = parts[0].lower()
+    
+    if cmd == "set" and len(parts) >= 2:
+        try:
+            sensor_threshold = float(parts[1])
+            print(f"경고 임계값이 {sensor_threshold}(으)로 설정되었습니다.")
+        except ValueError:
+            print("오류: 임계값은 숫자여야 합니다.")
+    elif cmd == "check" and len(parts) >= 2:
+        if sensor_threshold is None:
+            print("오류: 임계값이 먼저 설정되어야 합니다. 'alert set [값]'을 사용하세요.")
+            return
+            
+        reg_name = parts[1].upper()
+        if reg_name not in plc_registers:
+            print(f"오류: [{reg_name}] 레지스터가 존재하지 않습니다.")
+            return
+            
+        try:
+            reg_value = float(plc_registers[reg_name])
+            if reg_value > sensor_threshold:
+                print(f"🚨 [경보 발생] {reg_name} 값이 {reg_value}로 임계값({sensor_threshold})을 초과했습니다! 🚨")
+            else:
+                print(f"✅ [정상] {reg_name} 값이 {reg_value}로 안전 범위 내에 있습니다. (임계값: {sensor_threshold})")
+        except ValueError:
+            print(f"오류: [{reg_name}] 레지스터의 값('{plc_registers[reg_name]}')을 숫자로 변환할 수 없습니다.")
+    else:
+        print("잘못된 사용법입니다. 'alert'를 입력하여 도움말을 확인하세요.")
+
 @register_command("history", "그동안 실행했던 명령어 기록을 최대 100개까지 보여줍니다.")
 def show_history(arg=""):
     if not os.path.exists(HISTORY_FILE):
