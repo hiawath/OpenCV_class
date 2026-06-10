@@ -1,4 +1,5 @@
 .venv
 temp/
 cli/cli_history.txt
+*.pt
 
